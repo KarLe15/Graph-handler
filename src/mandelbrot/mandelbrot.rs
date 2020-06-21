@@ -1,65 +1,15 @@
-//use serde::{Serialize, Deserialize};
-//use actix_web::{get, web, App, HttpServer, Responder};
-//use log::{info, warn, debug, error};
-
 extern crate num;
 extern crate image;
 
-use std::fs::File;
 use std::str::FromStr;
-use std::io::Write;
+use std::fs::File;
 
 use num::Complex;
 
 use image::ColorType;
 use image::png::PNGEncoder;
 
-//mod structure;
-//use crate::structure::node::Node;
-//use crate::structure::graph::Graph;
 
-
-
-fn main() {
-//    let mut node = Node::new(32);
-//    let node2 = Node::new(13);
-//    let node3 = Node::new(15);
-//    node.connect_to_node(&node2, 1);
-//    println!("has neighbors test {:?}", node.has_neighbor(&node2));
-//    println!("is neighbor of neighbors test {:?}", node2.is_neighbor_of(&node));
-//    println!("created node   {:?}", node);
-//    println!("created node 2 {:?}", node2);
-//    println!("created node 3 {:?}", node3);
-//    let g = Graph::new(vec![1, 2, 3, 4], vec![(4,1), (1,3), (2,3), (1,4)]);
-//    println!("The graphe grated \n {:?}", g);
-    run_mandelbrot_single_thead();
-}
-
-fn run_mandelbrot_single_thead() {
-    let args: Vec<String> = std::env::args().collect();
-    if args.len() != 5 {
-        writeln!(
-            std::io::stderr(),
-            "Usage: mandelbrot FILE PIXELS UPPERLEFT LOWERRIGHT"
-        ).unwrap();
-        writeln!(
-            std::io::stderr(),
-            "Example: {} mandel.png 1000x750 -1.20,0.35 -1,0.20",
-            args[0]
-        ).unwrap();
-        std::process::exit(1);
-    }
-    let bounds = parse_pair(&args[2], 'x')
-        .expect("error parsing image dimensions");
-    let upper_left = parse_complex(&args[3])
-        .expect("error parsing upper left corner point");
-    let lower_right = parse_complex(&args[4])
-        .expect("error parsing lower right corner point");
-    let mut pixels = vec![0; bounds.0 * bounds.1];
-    render(&mut pixels, bounds, upper_left, lower_right);
-    write_image(&args[1], &pixels, bounds)
-        .expect("error writing PNG file");
-}
 
 
 /// Try to determine if `c` is in the Mandelbrot set, using at most `limit`
@@ -120,10 +70,10 @@ pub fn parse_complex(s: &str) -> Option<Complex<f64>> {
 /// The `upper_left` and `lower_right` parameters are points on the complex
 /// plane designating the area our image covers.
 pub fn pixel_to_point(bounds: (usize, usize),
-                      pixel: (usize, usize),
-                      upper_left: Complex<f64>,
-                      lower_right: Complex<f64>)
-                      -> Complex<f64>
+                  pixel: (usize, usize),
+                  upper_left: Complex<f64>,
+                  lower_right: Complex<f64>)
+                  -> Complex<f64>
 {
     let (width, height) = (lower_right.re - upper_left.re,
                            upper_left.im - lower_right.im);
@@ -141,9 +91,9 @@ pub fn pixel_to_point(bounds: (usize, usize),
 /// arguments specify points on the complex plane corresponding to the upper-
 /// left and lower-right corners of the pixel buffer.
 pub fn render(pixels: &mut [u8],
-              bounds: (usize, usize),
-              upper_left: Complex<f64>,
-              lower_right: Complex<f64>)
+          bounds: (usize, usize),
+          upper_left: Complex<f64>,
+          lower_right: Complex<f64>)
 {
     assert!(pixels.len() == bounds.0 * bounds.1);
     for row in 0 .. bounds.1 {
@@ -163,7 +113,7 @@ pub fn render(pixels: &mut [u8],
 /// Write the buffer `pixels`, whose dimensions are given by `bounds`, to the
 /// file named `filename`.
 pub fn write_image(filename: &str, pixels: &[u8], bounds: (usize, usize))
-                   -> Result<(), std::io::Error>
+               -> Result<(), std::io::Error>
 {
     let output = File::create(filename)?;
     let encoder = PNGEncoder::new(output);
