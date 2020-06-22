@@ -28,3 +28,6 @@ actix-rt = "1"
 # logger
 log = "0.4.8"
 log4rs = "0.12.0"
+
+# concurrency facility
+crossbeam = "0.2.8"
