@@ -1,4 +1,5 @@
 type Edge = (i64, isize);
+
 #[derive(Debug)]
 pub struct Node {
     pub payload: i64,
@@ -12,8 +13,8 @@ impl Node {
         }
     }
 
-    pub fn connect_to_node(&mut self, n: &Node, distance: isize) {
-        let edge = (n.payload, distance);
+    pub fn connect_to_node(&mut self, n: i64, distance: isize) {
+        let edge = (n, distance);
         self.neighbors.push(edge);
     }
 
@@ -32,6 +33,5 @@ impl Node {
             Some(_) => true,
         }
     }
-
 
 }
