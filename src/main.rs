@@ -1,4 +1,6 @@
 use std::io::Write;
+use std::fs::File;
+use std::io;
 
 //use serde::{Serialize, Deserialize};
 use actix_multipart::Multipart;
@@ -16,13 +18,12 @@ mod request;
 use structure::graph::Graph;
 use response::graph::Graph as ResponseGraph;
 use request::structures::UploadGraphParams;
-use std::fs::File;
-
 
 
 
 // constantes
 static DATA_PREFIX: &str = "./data";
+static DATA_SUFFIX: &str = ".data";
 
 
 #[get("/graph")]
@@ -33,6 +34,23 @@ async fn get_default_graph() -> impl Responder {
     HttpResponse::Ok().body(j)
 }
 
+#[get("/graphs")]
+async fn get_all_graphs() -> Result<HttpResponse, Error> {
+    let data_dir = std::fs::read_dir(format!("{}/", DATA_PREFIX)).unwrap();
+    let mut data_files = vec![];
+    for path in data_dir {
+        data_files.push(
+            path.unwrap().file_name()
+                .into_string().unwrap()
+                .strip_suffix(DATA_SUFFIX).unwrap()
+                .to_string()
+        );
+    }
+    let res = serde_json::to_string(&data_files).unwrap();
+    Ok(HttpResponse::Ok().body( res ) )
+}
+
+// increase security in this method
 #[post("/graph")]
 async fn upload_graph(mut payload: Multipart) ->  Result<HttpResponse, Error> {
     let mut filename = String::new();
@@ -46,34 +64,29 @@ async fn upload_graph(mut payload: Multipart) ->  Result<HttpResponse, Error> {
         };
         if is_file {
             let filepath = if received_name {
-                format!("{}/{}.data", DATA_PREFIX,  sanitize_filename::sanitize(&filename))
+                format!("{}/{}{}", DATA_PREFIX,  sanitize_filename::sanitize(&filename), DATA_SUFFIX)
             } else {
-                format!("{}/temporary.data", DATA_PREFIX,)
+                format!("{}/temporary{}", DATA_PREFIX, DATA_SUFFIX)
             };
-
-            println!("filepath : {}", filepath);
             // File::create is blocking operation, use threadpool
             let mut f: File = web::block(|| std::fs::File::create(filepath))
                 .await
                 .unwrap();
             file_created = true;
-            println!("File created");
             // Field in turn is stream of *Bytes* object
-            println!("writing all chunks");
             while let Some(chunk) = field.next().await {
                 let data = chunk.unwrap();
                 // filesystem operations are blocking, we have to use threadpool
                 f = web::block(move || f.write_all(&data).map(|_| f)).await?;
             }
         } else {
-            println!("getting graphName");
             while let Some(chunk) = field.next().await {
                 let data = chunk.unwrap();
                 let new_name = std::str::from_utf8(&data).unwrap();
                 if file_created {
                     std::fs::rename(
-                        format!("{}/temporary.data", DATA_PREFIX,),
-                        format!("{}/{}.data", DATA_PREFIX, new_name)
+                        format!("{}/temporary{}", DATA_PREFIX, DATA_SUFFIX),
+                        format!("{}/{}{}", DATA_PREFIX, new_name, DATA_SUFFIX)
                     );
                 } else {
                     filename = new_name.to_string();
@@ -96,6 +109,7 @@ async fn main() -> std::io::Result<()> {
                 )
             .service(get_default_graph)
             .service(upload_graph)
+            .service(get_all_graphs)
 
     ).bind("localhost:3000")?
         .run()
