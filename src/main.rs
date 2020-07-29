@@ -4,7 +4,7 @@ use std::io;
 
 //use serde::{Serialize, Deserialize};
 use actix_multipart::Multipart;
-use actix_web::{web, post, get, App, Error, HttpServer, Responder, HttpResponse, HttpRequest};
+use actix_web::{web, post, get, delete, App, Error, HttpServer, Responder, HttpResponse, HttpRequest};
 use actix_cors::Cors;
 
 use futures::{StreamExt, TryStreamExt};
@@ -51,6 +51,9 @@ async fn get_all_graphs() -> Result<HttpResponse, Error> {
 }
 
 // increase security in this method
+// TODO :: if the file exists, it should return error
+// TODO :: if there is no space available, it should return error
+// TODO :: this method should return value after creating file
 #[post("/graph")]
 async fn upload_graph(mut payload: Multipart) ->  Result<HttpResponse, Error> {
     let mut filename = String::new();
@@ -96,6 +99,11 @@ async fn upload_graph(mut payload: Multipart) ->  Result<HttpResponse, Error> {
         }
     }
     Ok(HttpResponse::Ok().into())
+}
+
+#[delete("/graph")]
+async fn delete_graph() -> Result<HttpResponse, Error> {
+
 }
 
 #[actix_rt::main]
