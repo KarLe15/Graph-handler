@@ -18,7 +18,8 @@ mod request;
 use structure::graph::Graph;
 use response::graph::Graph as ResponseGraph;
 use request::structures::UploadGraphParams;
-
+use crate::response::structs::{get_error_response, get_success_response};
+use crate::request::structures::DeleteGraphParams;
 
 
 // constantes
@@ -98,12 +99,22 @@ async fn upload_graph(mut payload: Multipart) ->  Result<HttpResponse, Error> {
             }
         }
     }
-    Ok(HttpResponse::Ok().into())
+    let response = serde_json::to_string(&get_success_response("The file was correctly handled", 201))?;
+    Ok(HttpResponse::Ok().body(response))
 }
 
-#[delete("/graph")]
-async fn delete_graph() -> Result<HttpResponse, Error> {
 
+// TODO :: delete file if exists
+#[delete("/graph")]
+async fn delete_graph(params: web::Json<DeleteGraphParams>) -> Result<HttpResponse, Error> {
+    let graph_name = &params.graph_name;
+    println!("query : {:?}", graph_name);
+    let body = serde_json::to_string(
+        &get_error_response(
+            "Method not implemented yet", 501, None
+        )
+    ).unwrap();
+    Ok(HttpResponse::NotImplemented().body(body))
 }
 
 #[actix_rt::main]
@@ -118,6 +129,7 @@ async fn main() -> std::io::Result<()> {
             .service(get_default_graph)
             .service(upload_graph)
             .service(get_all_graphs)
+            .service(delete_graph)
 
     ).bind("localhost:3000")?
         .run()
