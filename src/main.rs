@@ -20,13 +20,15 @@ use response::graph::Graph as ResponseGraph;
 use request::structures::UploadGraphParams;
 use crate::response::structs::{get_error_response, get_success_response};
 use crate::request::structures::DeleteGraphParams;
+use std::error::Error as stdError;
+
 
 
 // constantes
 static DATA_PREFIX: &str = "./data";
 static DATA_SUFFIX: &str = ".data";
 
-
+// TODO :: implement reading file and return it
 #[get("/graph")]
 async fn get_default_graph() -> impl Responder {
     let g = Graph::new(vec![1, 2, 3, 4], vec![(1,2), (1,3), (2,3), (4,4), (2,4)]);
@@ -104,17 +106,23 @@ async fn upload_graph(mut payload: Multipart) ->  Result<HttpResponse, Error> {
 }
 
 
-// TODO :: delete file if exists
 #[delete("/graph")]
 async fn delete_graph(params: web::Json<DeleteGraphParams>) -> Result<HttpResponse, Error> {
-    let graph_name = &params.graph_name;
-    println!("query : {:?}", graph_name);
-    let body = serde_json::to_string(
-        &get_error_response(
-            "Method not implemented yet", 501, None
-        )
-    ).unwrap();
-    Ok(HttpResponse::NotImplemented().body(body))
+    let file_path = format!("{}/{}{}", DATA_PREFIX, sanitize_filename::sanitize(&params.graph_name) , DATA_SUFFIX);
+    println!("query : {:?}", file_path);
+
+    match std::fs::remove_file(file_path) {
+        Err(e) => Ok( HttpResponse::InternalServerError().body(
+            serde_json::to_string(
+            &get_error_response("Unable to remove file", 501, Some(e.description()))
+            )?
+        )),
+        Ok(_) => Ok(HttpResponse::Ok().body(
+            serde_json::to_string(
+            &get_success_response("File correctly removed", 200)
+            )?
+        ))
+    }
 }
 
 #[actix_rt::main]
